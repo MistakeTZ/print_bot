@@ -11,6 +11,7 @@ from config import get_env, get_config
 import utils.kb as kb
 from states import UserState
 from database.model import DB
+from .print import create_print_job, execute_print, upload_file
 
 
 # Команда старта бота
@@ -25,23 +26,9 @@ async def command_start_handler(msg: Message, state: FSMContext) -> None:
     await sender.message(user_id, "start")
     await state.set_state(UserState.default)
 
-    poll = await bot.send_poll(-1002139552669, "Question", ["1", "2"], reply_markup=kb.buttons(False, "some", "some"))
-
-# Команда рассылки
-@dp.message(Command("mailing"))
-async def command_settings(msg: Message, state: FSMContext) -> None:
-    user_id = msg.from_user.id
-    role = DB.get("select role from users where telegram_id = ?", [user_id], True)
-    if not role:
-        await sender.message(user_id, "not_allowed")
-        return
-    if role[0] != "admin":
-        await sender.message(user_id, "not_allowed")
-        return
-
-    await sender.message(user_id, "write_message_for_mailing")
-    await state.set_state(UserState.mailing)
-    await state.set_data({"status": "begin"})
+    # job_id = create_print_job()
+    # upload_file(path.join("temp", "SampleDoc.pdf"))
+    # execute_print(job_id)
 
 
 # Команда получения БД

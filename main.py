@@ -31,7 +31,9 @@ if __name__ == "__main__":
     from loader import dp, bot
 
     # Загрузка обработчика команд
-    import utils
+    from utils.print import authentication
+
+    authentication()
 
     try:
         loop.run_until_complete(multiple_tasks())
