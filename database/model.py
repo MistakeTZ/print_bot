@@ -43,11 +43,11 @@ class DB():
             cur.execute("""create table prints (
                             id integer primary key autoincrement,
                             telegram_id bigint not null,
-                            photo_ids text not null,
+                            media_group_id int not null,
                             printed bool default false,
                             count int default 1,
-                            fields bool default false,
-                            color bool default true,
+                            fields int default 5,
+                            color bool default false,
                             two_side text default 'long',
                             registered timestamp
                             )""")

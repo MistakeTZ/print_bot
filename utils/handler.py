@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from loader import dp, bot, sender
 from datetime import datetime
 
-from os import path
+from os import path, mkdir
 from config import get_env, get_config
 import asyncio
 
@@ -20,7 +20,25 @@ from database.model import DB
 async def time_check(msg: Message, state: FSMContext):
     user_id = msg.from_user.id
     group = msg.media_group_id
-    await msg.answer(str(group))
+    
+    if not group:
+        group = int(str(user_id) + str(msg.message_id))
+
+    folder_path = path.join("temp", str(group))
+    if not path.exists(folder_path):
+        mkdir(folder_path)
+        DB.commit("insert into prints (telegram_id, media_group_id, registered) \
+                  values (?, ?, ?)", [user_id, group, datetime.now()])
+        first = True
+        database_id = DB.get("select id from prints where media_group_id = ?", [group], True)[0]
+    else:
+        first = False
+
+    file_path = path.join("temp", str(group), str(msg.message_id) + ".jpg")
+    await bot.download(msg.photo[-1].file_id, file_path)
+
+    if first:
+        await sender.message(user_id, "photo_sended", kb.buttons(True, "gen", f"generate_{database_id}", "print", f"print_{database_id}"))
 
 
 # Установка времени

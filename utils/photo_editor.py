@@ -1,0 +1,67 @@
+from PIL import Image, ImageOps
+from fpdf import FPDF
+import os
+
+def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 297), grid_size=(1, 1), grayscale=False, border=5):
+    """
+    Объединяет изображения в PDF.
+    
+    :param image_paths: Список путей к изображениям.
+    :param output_pdf: Имя выходного PDF-файла.
+    :param page_size: Размер страницы в мм (по умолчанию A4).
+    :param grid_size: Сетка для размещения изображений (количество строк и столбцов).
+    :param grayscale: Если True, применяет фильтр оттенков серого.
+    """
+    temp_file_dir = os.path.join(directory, "pages")
+    temp_file_pathes = []
+    if not os.path.exists(temp_file_dir):
+        os.mkdir(temp_file_dir)
+    else:
+        for filename in os.listdir(temp_file_dir):
+            file_path = os.path.join(temp_file_dir, filename)
+            os.remove(file_path)
+
+    image_paths = [image_path for image_path in image_paths if image_path.endswith(".jpg")]
+
+    on_page = grid_size[0] * grid_size[1]
+    mm_to_px = 11.81  # 1 мм в пикселях при 300 DPI
+    page_width, page_height = (int(page_size[0] * mm_to_px), int(page_size[1] * mm_to_px))
+    space = border * mm_to_px
+    spaces_count = (grid_size[0] + 1, grid_size[1] + 1)
+
+    cell_width = int((page_width - space * spaces_count[1]) // grid_size[1])
+    cell_height = int((page_height - space * spaces_count[0]) // grid_size[0])
+    
+    pdf = FPDF(unit="mm", format=page_size)
+    pdf.set_auto_page_break(auto=True, margin=0)
+    
+    for i in range(0, len(image_paths), on_page):
+        sheet = Image.new("RGB", (page_width, page_height), "white")
+        for idx in range(min(on_page, len(image_paths) - i)):
+            img = Image.open(os.path.join(directory, image_paths[i + idx]))
+
+            if grayscale:
+                img = ImageOps.grayscale(img).convert("RGB")
+
+            size = img.size
+            if size[0] > size[1] * 1.2:
+                img = img.rotate(90)
+
+            img = img.resize((cell_width, cell_height), Image.Resampling.LANCZOS)
+            x = int((idx % grid_size[1]) * (cell_width + space) + space)
+            y = int((idx // grid_size[1]) * (cell_height + space) + space)
+            sheet.paste(img, (x, y))
+
+        temp_file_path = os.path.join(temp_file_dir, str(i) + ".jpg")
+        temp_file_pathes.append(temp_file_path)
+        sheet.save(temp_file_path, format="JPEG")
+        
+        # Добавляем страницу в PDF
+        pdf.add_page()
+        pdf.image(temp_file_path, x=0, y=0, w=page_size[0], h=page_size[1])
+
+    output_pdf = os.path.join(directory, output_pdf)
+    pdf.output(output_pdf)
+    print(f"PDF создан {output_pdf}")
+
+    return output_pdf, temp_file_pathes

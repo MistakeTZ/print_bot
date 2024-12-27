@@ -1,8 +1,10 @@
 # UpdateDate：2021/01/27
 
-import sys
+from datetime import datetime, timedelta
+from shutil import rmtree
 import os
 from urllib import request, parse, error
+from database.model import DB
 from http import HTTPStatus
 import base64
 import json
@@ -63,13 +65,13 @@ def authentication():
     access_token = json.loads(body).get('access_token')
 
 
-def create_print_job():
+def create_print_job(job_id):
     global body
 
     job_uri = 'https://' + host + '/api/1/printing/printers/' + subject_id + '/jobs'
 
     data_param = {
-        'job_name': 'SampleJob1',
+        'job_name': f'SampleJob{job_id}',
         'print_mode': 'document'
     }
     data = json.dumps(data_param)
@@ -135,6 +137,7 @@ def upload_file(file_path):
 
     if err_str != '' or res.status != HTTPStatus.OK:
         return False
+    return True
 
 
 def execute_print(job_id):
@@ -161,5 +164,24 @@ def execute_print(job_id):
     logging.info('Execute print')
     if res == '':
         logging.warning(err_str)
+        return False
     else:
         logging.info("Print executed")
+        return True
+
+
+def delete_photos():
+    media_groups = DB.get("select media_group_id from prints where registered > ?",
+                          [datetime.now() + timedelta(days=-1)])
+    media_groups = [str(media_group[0]) for media_group in media_groups]
+    for filename in os.listdir("temp"):
+        file_path = os.path.join("temp", filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                if filename in media_groups:
+                    continue
+                rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))

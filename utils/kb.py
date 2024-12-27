@@ -50,6 +50,34 @@ def table(width: int, *args) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=in_buttons)
 
 
+# Кнопки изменения
+def edit_buttons(print_id, page, page_count) -> InlineKeyboardMarkup:
+    in_buttons = []
+
+    if page == 0:
+        previous = page_count - 1
+    else:
+        previous = page - 1
+    if page == page_count - 1:
+        next_page = 0
+    else:
+        next_page = page + 1
+    in_buttons.append([
+        InlineKeyboardButton(text="<", callback_data=f"edit_{print_id}_page_{previous}"),
+        InlineKeyboardButton(text="Страница {}/{}".format(page + 1, page_count), callback_data="_"),
+        InlineKeyboardButton(text=">", callback_data=f"edit_{print_id}_page_{next_page}")
+    ])
+    in_buttons.extend([
+        [InlineKeyboardButton(text=sender.text("count"), callback_data=f"edit_{print_id}_count_{page}")],
+        [InlineKeyboardButton(text=sender.text("gray"), callback_data=f"edit_{print_id}_gray_{page}")],
+        [InlineKeyboardButton(text=sender.text("fields"), callback_data=f"edit_{print_id}_fields_{page}")],
+        [InlineKeyboardButton(text=sender.text("2side"), callback_data=f"edit_{print_id}_2side_{page}")],
+    ])
+    in_buttons.append([InlineKeyboardButton(text=sender.text("print"), callback_data=f"print_{print_id}")])
+
+    return InlineKeyboardMarkup(inline_keyboard=in_buttons)
+
+
 # Таблица reply кнопок
 def reply_table(width: int, *args, **kwards
                 ) -> ReplyKeyboardMarkup:

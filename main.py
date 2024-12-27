@@ -31,7 +31,7 @@ if __name__ == "__main__":
     from loader import dp, bot
 
     # Загрузка обработчика команд
-    from utils.print import authentication
+    from utils.print import authentication, delete_photos
 
     authentication()
 
@@ -40,5 +40,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass
     logging.info("Exiting")
+
+    delete_photos()
 
     DB.unload_database()
