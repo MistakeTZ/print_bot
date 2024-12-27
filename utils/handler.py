@@ -1,14 +1,13 @@
 from aiogram import F
 from aiogram.filters import Filter
-from aiogram.types import Message, ReplyKeyboardRemove
-from aiogram.utils.markdown import hlink
+from aiogram.types import Message, FSInputFile
 from aiogram.fsm.context import FSMContext
 from loader import dp, bot, sender
 from datetime import datetime
+import math
 
-from os import path, mkdir
-from config import get_env, get_config
-import asyncio
+from os import path, mkdir, walk
+from .photo_editor import combine_images_to_pdf
 
 import utils.kb as kb
 from states import UserState
@@ -41,15 +40,40 @@ async def time_check(msg: Message, state: FSMContext):
         await sender.message(user_id, "photo_sended", kb.buttons(True, "gen", f"generate_{database_id}", "print", f"print_{database_id}"))
 
 
-# Установка времени
-@dp.message(UserState.time)
+# Изменение
+@dp.message(UserState.edit, F.text)
 async def time_check(msg: Message, state: FSMContext):
     user_id = msg.from_user.id
     try:
-        time = datetime.strptime(msg.text, "%H:%M")
-    except ValueError:
-        await sender.message(user_id, "wrong_time")
+        number = int(msg.text)
+    except:
         return
+
+    data = await state.get_data()
+    DB.commit("update prints set {} = ? where id = ?".format(data["edit"]), [number, data["id"]])
+
+    database = DB.get("select media_group_id, count, fields, color, two_side from prints where id = ?", [data["id"]], True)
+    values = list(database)
+    directory = path.join("temp", str(values[0]))
+    files = next(walk(directory), (None, None, []))[2]
+
+    _, files = combine_images_to_pdf(directory, files, "photo.pdf",
+            grid_size=(int(math.sqrt(values[1])), int(math.sqrt(values[1]))),
+            grayscale=values[3], border=values[2])
+    
+    if values[4] == 'short':
+        text = "переплет по короткому краю"
+    elif values[4] == 'off':
+        text = "отключена"
+    elif values[4] == 'long':
+        text = "переплет по длинному краю"
+    text = sender.text("paint_settings",
+        values[1], ["отключено", "включено"][values[3]], values[2], text)
+
+    reply = kb.edit_buttons(data["id"], 0, len(files))
+
+    file = FSInputFile(path=files[0], filename="photo.jpg")
+    await bot.send_photo(user_id, file, caption=text, reply_markup=reply)
 
 
 # Установка телефона

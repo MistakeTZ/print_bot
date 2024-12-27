@@ -1,6 +1,6 @@
 from aiogram import F
 from aiogram.types.callback_query import CallbackQuery
-from aiogram.types import FSInputFile
+from aiogram.types import FSInputFile, InputMediaPhoto
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.markdown import hlink
 from loader import dp, bot, sender
@@ -13,7 +13,7 @@ from config import get_env, get_config
 import utils.kb as kb
 from states import UserState
 from database.model import DB
-from .print import execute_print, create_print_job, upload_file
+from .printing import execute_print, create_print_job, upload_file
 from .photo_editor import combine_images_to_pdf
 
 
@@ -43,7 +43,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
         return
 
     await sender.message(user_id, "creating_doc")
-    _, photo_pathes = combine_images_to_pdf(directory, files, "photo.pdf", grid_size=(2, 2))
+    _, photo_pathes = combine_images_to_pdf(directory, files, "photo.pdf")
 
     file = FSInputFile(path=photo_pathes[0], filename="photo.jpg")
     await bot.send_photo(user_id, file,
@@ -68,9 +68,11 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
 
     photo_path = path.join("temp", str(values[0]))
     files = next(walk(path.join(photo_path, "pages")), (None, None, []))[2]
+    photo_changed = False
 
     if to_edit == "page":
         file = path.join(path.join(photo_path, "pages"), files[page])
+        photo_changed = True
 
     else:
         if to_edit == "count" or to_edit == "fields":
@@ -93,9 +95,11 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
             files = next(walk(photo_path), (None, None, []))[2]
             values[3] = not values[3]
             DB.commit("update prints set color = ? where id = ?", [values[3], print_id])
-            _, photo_pathes = combine_images_to_pdf(photo_path, files, "photo.pdf",
+            _, files = combine_images_to_pdf(photo_path, files, "photo.pdf",
                                                     grid_size=(int(math.sqrt(values[1])), int(math.sqrt(values[1]))),
                                                     grayscale=values[3], border=values[2])
+            file = files[page]
+            photo_changed = True
 
     if values[4] == 'short':
         text = "переплет по короткому краю"
@@ -103,16 +107,26 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
         text = "отключена"
     elif values[4] == 'long':
         text = "переплет по длинному краю"
+    text = sender.text("paint_settings",
+        values[1], ["отключено", "включено"][values[3]], values[2], text)
+    reply = kb.edit_buttons(print_id, page, len(files))
 
-    # file = FSInputFile(path=photo_pathes[0], filename="photo.jpg")
-    await clbck.message.edit_caption(caption=sender.text("paint_settings",
-            values[1], ["отключено", "включено"][values[3]], values[2], text),
-            reply_markup=kb.edit_buttons(print_id, page, len(files)))
-
+    if photo_changed:
+        file = FSInputFile(path=file, filename="photo.jpg")
+        photo = InputMediaPhoto(media=file, caption=text)
+        try:
+            await clbck.message.edit_media(media=photo, reply_markup=reply)
+        except Exception as e:
+            print(e)
+    else:
+        try:
+            await clbck.message.edit_caption(caption=text, reply_markup=reply)
+        except Exception as e:
+            print(e)
 
 
 @dp.callback_query(F.data.startswith("print_"))
-async def print(clbck: CallbackQuery, state: FSMContext):
+async def print_(clbck: CallbackQuery, state: FSMContext):
     user_id = clbck.from_user.id
     print_id = int(clbck.data.split("_")[-1])
     media_group = DB.get("select media_group_id from prints where id = ?", [print_id], True)

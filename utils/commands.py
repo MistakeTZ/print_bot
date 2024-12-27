@@ -11,7 +11,7 @@ from config import get_env, get_config
 import utils.kb as kb
 from states import UserState
 from database.model import DB
-from .print import create_print_job, execute_print, upload_file
+from .printing import create_print_job, execute_print, upload_file
 
 
 # Команда старта бота

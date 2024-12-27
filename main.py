@@ -31,7 +31,7 @@ if __name__ == "__main__":
     from loader import dp, bot
 
     # Загрузка обработчика команд
-    from utils.print import authentication, delete_photos
+    from utils.printing import authentication, delete_photos
 
     authentication()
 
