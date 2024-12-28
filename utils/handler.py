@@ -60,7 +60,7 @@ async def time_check(msg: Message, state: FSMContext):
     _, files = combine_images_to_pdf(directory, files, "photo.pdf",
             grid_size=(int(math.sqrt(values[1])), int(math.sqrt(values[1]))),
             grayscale=values[3], border=values[2])
-    
+
     if values[4] == 'short':
         text = "переплет по короткому краю"
     elif values[4] == 'off':
@@ -105,7 +105,7 @@ async def set_databse(msg: Message, state: FSMContext):
         return
     if role[0] != "admin":
         return
-    
+
     doc = msg.document
     if doc.file_name.split(".")[-1] != "sqlite3":
         return

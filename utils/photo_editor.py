@@ -44,12 +44,14 @@ def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 29
                 img = ImageOps.grayscale(img).convert("RGB")
 
             size = img.size
-            if size[0] > size[1] * 1.2:
-                img = img.rotate(90)
 
-            img = img.resize((cell_width, cell_height), Image.Resampling.LANCZOS)
-            x = int((idx % grid_size[1]) * (cell_width + space) + space)
-            y = int((idx // grid_size[1]) * (cell_height + space) + space)
+            width, height, is_rotate, offsets = count_width_and_height(cell_width, cell_height, *size)
+            if is_rotate:
+                img = img.rotate(90, expand=True)
+
+            img = img.resize((width, height), Image.Resampling.LANCZOS)
+            x = int((idx % grid_size[1]) * (cell_width + space) + space) + offsets[0]
+            y = int((idx // grid_size[1]) * (cell_height + space) + space) + offsets[1]
             sheet.paste(img, (x, y))
 
         temp_file_path = os.path.join(temp_file_dir, str(i) + ".jpg")
@@ -65,3 +67,18 @@ def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 29
     print(f"PDF создан {output_pdf}")
 
     return output_pdf, temp_file_pathes
+
+
+def count_width_and_height(cell_width, cell_height, width, height):
+    is_rotate = width > height * 1.2
+    if is_rotate:
+        temp = height
+        height = width
+        width = temp
+
+    coefs = (cell_width / width, cell_height / height)
+    width = int(width * min(coefs))
+    height = int(height * min(coefs))
+    offsets = (int((cell_width - width) / 2), int((cell_height - height) / 2))
+
+    return width, height, is_rotate, offsets
