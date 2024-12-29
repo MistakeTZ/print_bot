@@ -13,6 +13,7 @@ def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 29
     :param grayscale: Если True, применяет фильтр оттенков серого.
     :param size: Если None, не влияет, если tuple(float, float), устанавливает размер одного фото.
     """
+    print(grid_size)
     temp_file_dir = os.path.join(directory, "pages")
     temp_file_pathes = []
     if not os.path.exists(temp_file_dir):
@@ -38,10 +39,10 @@ def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 29
 
     else:
         spaces = (border * mm_to_px, border * mm_to_px)
-        spaces_count = (grid_size[0] + 1, grid_size[1] + 1)
+        spaces_count = (grid_size[1] + 1, grid_size[0] + 1)
 
-        cell_width = int((page_width - spaces[1] * spaces_count[1]) // grid_size[1])
-        cell_height = int((page_height - spaces[0] * spaces_count[0]) // grid_size[0])
+        cell_width = int((page_width - spaces[1] * spaces_count[1]) // grid_size[0])
+        cell_height = int((page_height - spaces[0] * spaces_count[0]) // grid_size[1])
         borders = [border] * 2
     
     pdf = FPDF(unit="mm", format=page_size)
@@ -63,7 +64,7 @@ def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 29
 
             img = img.resize((width, height), Image.Resampling.LANCZOS)
             x = int((idx % grid_size[0]) * (cell_width + spaces[0]) + spaces[0]) + offsets[0]
-            y = int((idx // grid_size[1]) * (cell_height + spaces[1]) + spaces[1]) + offsets[1]
+            y = int((idx // grid_size[0]) * (cell_height + spaces[1]) + spaces[1]) + offsets[1]
             sheet.paste(img, (x, y))
 
         temp_file_path = os.path.join(temp_file_dir, str(i) + ".jpg")

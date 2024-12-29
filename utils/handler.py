@@ -48,6 +48,16 @@ async def time_check(msg: Message, state: FSMContext):
     user_id = msg.from_user.id
 
     data = await state.get_data()
+    if data["edit"] == "count":
+        if not "x" in data:
+            try:
+                number = int(msg.text)
+            except:
+                return
+            data["x"] = number
+            await state.set_data(data)
+            await sender.message(user_id, "edit_count_y")
+            return
 
     database = DB.get("select media_group_id, count, fields, color, two_side, quality from prints where id = ?", [data["id"]], True)
     values = list(database)
@@ -60,9 +70,10 @@ async def time_check(msg: Message, state: FSMContext):
         except:
             return
     if data["edit"] == "count":
-        count = number
+        count_y = number
+        count_x = data["x"]
     else:
-        count = values[1]
+        count_x, count_y = values[1], values[1]
 
     if data["edit"] != "size":
         if data["edit"] == "fields":
@@ -71,7 +82,7 @@ async def time_check(msg: Message, state: FSMContext):
             fields = values[2]
 
         returnable = combine_images_to_pdf(directory, files, "photo.pdf",
-                grid_size=(int(math.sqrt(count)), int(math.sqrt(count))),
+                grid_size=(count_x, count_y),
                 grayscale=values[3], border=fields)
         sizes = returnable["sizes"]
 
@@ -109,7 +120,7 @@ async def time_check(msg: Message, state: FSMContext):
 
     text = sender.text("paint_settings")
 
-    reply = kb.edit_buttons(data["id"], 0, len(files), count, sizes, ["отключено", "включено"][values[3]], fields, duplex, quality)
+    reply = kb.edit_buttons(data["id"], 0, len(files), count_x, sizes, ["отключено", "включено"][values[3]], fields, duplex, quality)
 
     file = FSInputFile(path=files[0], filename="photo.jpg")
     await bot.send_photo(user_id, file, caption=text, reply_markup=reply)
