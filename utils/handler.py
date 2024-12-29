@@ -5,6 +5,8 @@ from aiogram.fsm.context import FSMContext
 from loader import dp, bot, sender
 from datetime import datetime
 import math
+from pdf2image import convert_from_path
+import subprocess, re
 
 from os import path, mkdir, walk
 from .photo_editor import combine_images_to_pdf
@@ -117,15 +119,48 @@ async def time_check(msg: Message, state: FSMContext):
 @dp.message(F.document)
 async def set_databse(msg: Message, state: FSMContext):
     user_id = msg.from_user.id
-    role = DB.get('select role from users where telegram_id = ?', [user_id], True)
-    if not role:
-        return
-    if role[0] != "admin":
-        return
 
     doc = msg.document
-    if doc.file_name.split(".")[-1] != "sqlite3":
-        return
+    extension = doc.file_name.split(".")[-1]
+    if extension == "sqlite3":
+        role = DB.get('select role from users where telegram_id = ?', [user_id], True)
+        if not role:
+            return
+        if role[0] != "admin":
+            return
     
-    file = await bot.get_file(doc.file_id)
-    await bot.download_file(file.file_path, path.join("database", "db.sqlite3"))
+        file = await bot.get_file(doc.file_id)
+        await bot.download_file(file.file_path, path.join("database", "db.sqlite3"))
+
+    elif extension == "pdf" or extension == "docx":
+        group = int(str(user_id) + str(msg.message_id))
+
+        folder_path = path.join("temp", str(group))
+        mkdir(folder_path)
+        DB.commit("insert into prints (telegram_id, media_group_id, registered) \
+                values (?, ?, ?)", [user_id, group, datetime.now()])
+        database_id = DB.get("select id from prints where media_group_id = ?", [group], True)[0]
+
+        if extension == "docx":
+            docx_path = path.join(folder_path, str(msg.message_id) + ".docx")
+            await bot.download(msg.document.file_id, docx_path)
+            file_path = path.join(folder_path, str(msg.message_id) + ".pdf")
+            convert_to(folder_path, docx_path)
+        else:
+            file_path = path.join(folder_path, str(msg.message_id) + ".pdf")
+            await bot.download(msg.document.file_id, file_path)
+
+        pages = convert_from_path(file_path, 500)
+        for count, page in enumerate(pages):
+            page.save(path.join(folder_path, f'out{count}.jpg'), 'JPEG')
+
+        await sender.message(user_id, "doc_sended", kb.buttons(True, "gen", f"generate_{database_id}", "print", f"print_{database_id}"))
+
+
+def convert_to(folder, source, timeout=None):
+    args = ['libreoffice', '--headless', '--convert-to', 'pdf', '--outdir', folder, source]
+
+    process = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
+    filename = re.search('-> (.*?) using filter', process.stdout.decode())
+
+    return filename.group(1)
