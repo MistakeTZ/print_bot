@@ -46,9 +46,8 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
     _, photo_pathes = combine_images_to_pdf(directory, files, "photo.pdf")
 
     file = FSInputFile(path=photo_pathes[0], filename="photo.jpg")
-    await bot.send_photo(user_id, file,
-                         caption=sender.text("paint_settings", 1, "отключено", 5, "переплет по длинному краю", "среднее"),
-                         reply_markup=kb.edit_buttons(print_id, 0, len(photo_pathes)))
+    reply = kb.edit_buttons(print_id, 0, len(photo_pathes), 1, "отключено", 5, "переплет по длинному краю", "среднее")
+    await bot.send_photo(user_id, file, caption=sender.text("paint_settings"), reply_markup=reply)
 
 
 # Изменение настроек
@@ -124,9 +123,8 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
     elif values[5] == 'high':
         quality = "высокое"
 
-    text = sender.text("paint_settings",
-        values[1], ["отключено", "включено"][values[3]], values[2], duplex, quality)
-    reply = kb.edit_buttons(print_id, page, len(files))
+    text = sender.text("paint_settings")
+    reply = kb.edit_buttons(print_id, page, len(files), values[1], ["отключено", "включено"][values[3]], values[2], duplex, quality)
 
     if photo_changed:
         file = FSInputFile(path=file, filename="photo.jpg")
@@ -137,7 +135,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
             print(e)
     else:
         try:
-            await clbck.message.edit_caption(caption=text, reply_markup=reply)
+            await clbck.message.edit_reply_markup(reply_markup=reply)
         except Exception as e:
             print(e)
 

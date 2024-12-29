@@ -75,10 +75,9 @@ async def time_check(msg: Message, state: FSMContext):
     elif values[4] == 'high':
         quality = "высокое"
 
-    text = sender.text("paint_settings",
-        values[1], ["отключено", "включено"][values[3]], values[2], duplex, quality)
+    text = sender.text("paint_settings")
 
-    reply = kb.edit_buttons(data["id"], 0, len(files))
+    reply = kb.edit_buttons(data["id"], 0, len(files),  values[1], ["отключено", "включено"][values[3]], values[2], duplex, quality)
 
     file = FSInputFile(path=files[0], filename="photo.jpg")
     await bot.send_photo(user_id, file, caption=text, reply_markup=reply)

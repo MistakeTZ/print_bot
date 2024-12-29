@@ -51,7 +51,7 @@ def table(width: int, *args) -> InlineKeyboardMarkup:
 
 
 # Кнопки изменения
-def edit_buttons(print_id, page, page_count) -> InlineKeyboardMarkup:
+def edit_buttons(print_id, page, page_count, *args) -> InlineKeyboardMarkup:
     in_buttons = []
 
     if page == 0:
@@ -67,9 +67,9 @@ def edit_buttons(print_id, page, page_count) -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="Страница {}/{}".format(page + 1, page_count), callback_data="_"),
         InlineKeyboardButton(text=">", callback_data=f"edit_{print_id}_page_{next_page}")
     ])
-    for el in ["count", "gray", "fields", "2side", "quality"]:
+    for i, el in enumerate(["count", "fields", "gray", "2side", "quality"]):
         in_buttons.append([
-            InlineKeyboardButton(text=sender.text(el), callback_data=f"edit_{print_id}_{el}_{page}")
+            InlineKeyboardButton(text=sender.text(el, args[i]), callback_data=f"edit_{print_id}_{el}_{page}")
         ])
 
     in_buttons.append([InlineKeyboardButton(text=sender.text("print"), callback_data=f"print_{print_id}")])
