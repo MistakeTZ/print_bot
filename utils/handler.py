@@ -62,11 +62,11 @@ async def time_check(msg: Message, state: FSMContext):
             grayscale=values[3], border=values[2])
 
     if values[4] == 'short':
-        duplex = "переплет по короткому краю"
+        duplex = "по короткому краю"
     elif values[4] == 'off':
         duplex = "отключена"
     elif values[4] == 'long':
-        duplex = "переплет по длинному краю"
+        duplex = "по длинному краю"
 
     if values[4] == 'low':
         quality = "низкое"

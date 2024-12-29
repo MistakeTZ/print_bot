@@ -46,7 +46,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
     _, photo_pathes = combine_images_to_pdf(directory, files, "photo.pdf")
 
     file = FSInputFile(path=photo_pathes[0], filename="photo.jpg")
-    reply = kb.edit_buttons(print_id, 0, len(photo_pathes), 1, "отключено", 5, "переплет по длинному краю", "среднее")
+    reply = kb.edit_buttons(print_id, 0, len(photo_pathes), 1, "отключено", 5, "по длинному краю", "среднее")
     await bot.send_photo(user_id, file, caption=sender.text("paint_settings"), reply_markup=reply)
 
 
@@ -110,11 +110,11 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
             photo_changed = True
 
     if values[4] == 'short':
-        duplex = "переплет по короткому краю"
+        duplex = "по короткому краю"
     elif values[4] == 'off':
         duplex = "отключена"
     elif values[4] == 'long':
-        duplex = "переплет по длинному краю"
+        duplex = "по длинному краю"
 
     if values[5] == 'low':
         quality = "низкое"
