@@ -43,10 +43,10 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
         return
 
     await sender.message(user_id, "creating_doc")
-    _, photo_pathes = combine_images_to_pdf(directory, files, "photo.pdf")
+    _, photo_pathes, _ = combine_images_to_pdf(directory, files, "photo.pdf")
 
     file = FSInputFile(path=photo_pathes[0], filename="photo.jpg")
-    reply = kb.edit_buttons(print_id, 0, len(photo_pathes), 1, "отключено", 5, "по длинному краю", "среднее")
+    reply = kb.edit_buttons(print_id, 0, len(photo_pathes), 1, [200, 287], "отключено", 5, "по длинному краю", "среднее")
     await bot.send_photo(user_id, file, caption=sender.text("paint_settings"), reply_markup=reply)
 
 
@@ -59,7 +59,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
     to_edit = data[2]
     page = int(data[3])
 
-    database = DB.get("select media_group_id, count, fields, color, two_side, quality from prints where id = ?", [print_id], True)
+    database = DB.get("select media_group_id, count, fields, color, two_side, quality, width, height from prints where id = ?", [print_id], True)
 
     if not database:
         return
@@ -81,7 +81,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
             return
         elif to_edit == "2side":
             if values[4] == 'long':
-                values[4] = 'off'
+                values[4] = 'none'
             elif values[4] == 'short':
                 values[4] = 'long'
             else:
@@ -90,12 +90,12 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
             DB.commit("update prints set two_side = ? where id = ?", [values[4], print_id])
 
         elif to_edit == "quality":
-            if values[5] == 'low':
+            if values[5] == 'draft':
                 values[5] = 'medium'
             elif values[5] == 'medium':
                 values[5] = 'high'
             elif values[5] == 'high':
-                values[5] = 'low'
+                values[5] = 'draft'
                 
             DB.commit("update prints set quality = ? where id = ?", [values[5], print_id])
 
@@ -103,7 +103,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
             files = next(walk(photo_path), (None, None, []))[2]
             values[3] = not values[3]
             DB.commit("update prints set color = ? where id = ?", [values[3], print_id])
-            _, files = combine_images_to_pdf(photo_path, files, "photo.pdf",
+            _, files, _ = combine_images_to_pdf(photo_path, files, "photo.pdf",
                                                     grid_size=(int(math.sqrt(values[1])), int(math.sqrt(values[1]))),
                                                     grayscale=values[3], border=values[2])
             file = files[page]
@@ -111,12 +111,12 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
 
     if values[4] == 'short':
         duplex = "по короткому краю"
-    elif values[4] == 'off':
+    elif values[4] == 'none':
         duplex = "отключена"
     elif values[4] == 'long':
         duplex = "по длинному краю"
 
-    if values[5] == 'low':
+    if values[5] == 'draft':
         quality = "низкое"
     elif values[5] == 'medium':
         quality = "среднее"
@@ -124,7 +124,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
         quality = "высокое"
 
     text = sender.text("paint_settings")
-    reply = kb.edit_buttons(print_id, page, len(files), values[1], ["отключено", "включено"][values[3]], values[2], duplex, quality)
+    reply = kb.edit_buttons(print_id, page, len(files), values[1], values[6:8], ["отключено", "включено"][values[3]], values[2], duplex, quality)
 
     if photo_changed:
         file = FSInputFile(path=file, filename="photo.jpg")
@@ -144,7 +144,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
 async def print_(clbck: CallbackQuery, state: FSMContext):
     user_id = clbck.from_user.id
     print_id = int(clbck.data.split("_")[-1])
-    data = DB.get("select media_group_id, two_side, quality from prints where id = ?", [print_id], True)
+    data = DB.get("select media_group_id, two_side, quality, color from prints where id = ?", [print_id], True)
 
     if not data:
         await sender.message(user_id, "failed")
@@ -159,10 +159,10 @@ async def print_(clbck: CallbackQuery, state: FSMContext):
             return
     
         await sender.message(user_id, "creating_doc")
-        file_path, _ = combine_images_to_pdf(directory, files, "photo.pdf")
+        file_path, _, _ = combine_images_to_pdf(directory, files, "photo.pdf")
 
     await sender.message(user_id, "creating_job")
-    job_id = create_print_job(print_id, data[2], data[1]!='off')
+    job_id = create_print_job(print_id, data[2], data[1]!='off', data[3])
     if not job_id:
         await sender.message(user_id, "failed")
         return

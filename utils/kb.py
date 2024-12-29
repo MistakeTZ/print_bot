@@ -64,13 +64,20 @@ def edit_buttons(print_id, page, page_count, *args) -> InlineKeyboardMarkup:
         next_page = page + 1
     in_buttons.append([
         InlineKeyboardButton(text="<", callback_data=f"edit_{print_id}_page_{previous}"),
-        InlineKeyboardButton(text="Страница {}/{}".format(page + 1, page_count), callback_data="_"),
+        InlineKeyboardButton(text=sender.text("page", page + 1, page_count), callback_data="_"),
         InlineKeyboardButton(text=">", callback_data=f"edit_{print_id}_page_{next_page}")
     ])
-    for i, el in enumerate(["count", "gray", "fields", "2side", "quality"]):
-        in_buttons.append([
-            InlineKeyboardButton(text=sender.text(el, args[i]), callback_data=f"edit_{print_id}_{el}_{page}")
-        ])
+    for i, el in enumerate(["count", "size", "gray", "fields", "2side", "quality"]):
+        if el == "size":
+            sizes = [round(size, 0) / 10 for size in args[i]]
+            in_buttons.append([
+                InlineKeyboardButton(text=sender.text(el, *sizes),
+                                     callback_data=f"edit_{print_id}_{el}_{page}")
+            ])
+        else:
+            in_buttons.append([
+                InlineKeyboardButton(text=sender.text(el, args[i]), callback_data=f"edit_{print_id}_{el}_{page}")
+            ])
 
     in_buttons.append([InlineKeyboardButton(text=sender.text("print"), callback_data=f"print_{print_id}")])
 

@@ -47,6 +47,8 @@ class DB():
                             printed bool default false,
                             count int default 1,
                             fields int default 5,
+                            width float default 200,
+                            height float default 287,
                             color bool default false,
                             two_side text default 'long',
                             quality text default 'medium',

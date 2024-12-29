@@ -50,34 +50,35 @@ async def time_check(msg: Message, state: FSMContext):
         return
 
     data = await state.get_data()
-    DB.commit("update prints set {} = ? where id = ?".format(data["edit"]), [number, data["id"]])
 
     database = DB.get("select media_group_id, count, fields, color, two_side, quality from prints where id = ?", [data["id"]], True)
     values = list(database)
     directory = path.join("temp", str(values[0]))
     files = next(walk(directory), (None, None, []))[2]
 
-    _, files = combine_images_to_pdf(directory, files, "photo.pdf",
+    _, files, sizes = combine_images_to_pdf(directory, files, "photo.pdf",
             grid_size=(int(math.sqrt(values[1])), int(math.sqrt(values[1]))),
             grayscale=values[3], border=values[2])
 
+    DB.commit("update prints set {} = ?, width = ?, height = ? where id = ?".format(data["edit"]), [number, *sizes, data["id"]])
+
     if values[4] == 'short':
         duplex = "по короткому краю"
-    elif values[4] == 'off':
+    elif values[4] == 'none':
         duplex = "отключена"
     elif values[4] == 'long':
         duplex = "по длинному краю"
 
-    if values[4] == 'low':
+    if values[5] == 'draft':
         quality = "низкое"
-    elif values[4] == 'medium':
+    elif values[5] == 'medium':
         quality = "среднее"
-    elif values[4] == 'high':
+    elif values[5] == 'high':
         quality = "высокое"
 
     text = sender.text("paint_settings")
 
-    reply = kb.edit_buttons(data["id"], 0, len(files),  values[1], ["отключено", "включено"][values[3]], values[2], duplex, quality)
+    reply = kb.edit_buttons(data["id"], 0, len(files),  values[1], sizes, ["отключено", "включено"][values[3]], values[2], duplex, quality)
 
     file = FSInputFile(path=files[0], filename="photo.jpg")
     await bot.send_photo(user_id, file, caption=text, reply_markup=reply)
@@ -88,19 +89,6 @@ async def time_check(msg: Message, state: FSMContext):
 async def phone_check(msg: Message, state: FSMContext):
     user_id = msg.from_user.id
     phone = msg.contact.phone_number
-
-
-# Проверка на отсутствие состояний
-class NoStates(Filter):
-    async def __call__(self, msg: Message, state: FSMContext):
-        stat = await state.get_state()
-        return stat is None
-
-
-# Сообщение без состояний
-@dp.message(NoStates())
-async def no_states_handler(msg: Message, state: FSMContext):
-    pass
 
 
 # Установка базы данных

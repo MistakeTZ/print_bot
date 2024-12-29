@@ -68,7 +68,7 @@ def authentication():
     access_token = json.loads(body).get('access_token')
 
 
-def create_print_job(job_id, quality, duplex):
+def create_print_job(job_id, quality, duplex, color):
     global body
 
     job_uri = 'https://' + host + '/api/1/printing/printers/' + subject_id + '/jobs'
@@ -76,8 +76,18 @@ def create_print_job(job_id, quality, duplex):
     data_param = {
         'job_name': f'SampleJob{job_id}',
         'print_mode': 'document',
-        'quality': quality,  # Указываем качество печати (например, 'low', 'medium', 'high')
-        'duplex': duplex      # Включаем двустороннюю печать (True или False)
+        'print_setting': {
+            'media_size': "ms_a4",
+            'media_type': "mt_plainpaper",
+            'borderless': False,
+            'print_quality': quality,
+            'source': "auto",
+            'color_mode': ["color", "mono"][color],
+            'two_sided': duplex,
+            'reverse_order': False,
+            'copies': 1,
+            'collate': True
+        }
     }
     data = json.dumps(data_param)
 

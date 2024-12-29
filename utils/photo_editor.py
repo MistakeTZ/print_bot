@@ -66,7 +66,7 @@ def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 29
     pdf.output(output_pdf)
     print(f"PDF создан {output_pdf}")
 
-    return output_pdf, temp_file_pathes
+    return output_pdf, temp_file_pathes, (cell_width / mm_to_px, cell_height / mm_to_px)
 
 
 def count_width_and_height(cell_width, cell_height, width, height):

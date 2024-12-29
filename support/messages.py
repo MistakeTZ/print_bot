@@ -24,7 +24,12 @@ class MessageSender():
     # Получение текста сообщения по ключу с указанием аргументов
     def text(self, key: str, *args) -> str:
         if key in self.messages:
-            return self.messages[key].format(*args)
+            try:
+                return self.messages[key].format(*args)
+            except Exception as e:
+                print(e)
+                print(key, args)
+                return self.messages[key]
         
         print(f"Key {key} not found")
         return self.messages["default"]
