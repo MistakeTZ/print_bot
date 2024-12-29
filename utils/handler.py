@@ -6,7 +6,7 @@ from loader import dp, bot, sender
 from datetime import datetime
 import math
 from pdf2image import convert_from_path
-import subprocess, re
+import pypandoc
 
 from os import path, mkdir, walk
 from .photo_editor import combine_images_to_pdf
@@ -145,7 +145,7 @@ async def set_databse(msg: Message, state: FSMContext):
             docx_path = path.join(folder_path, str(msg.message_id) + ".docx")
             await bot.download(msg.document.file_id, docx_path)
             file_path = path.join(folder_path, str(msg.message_id) + ".pdf")
-            convert_to(folder_path, docx_path)
+            pypandoc.convert_file(docx_path, 'pdf', outputfile=file_path)
         else:
             file_path = path.join(folder_path, str(msg.message_id) + ".pdf")
             await bot.download(msg.document.file_id, file_path)
@@ -155,12 +155,3 @@ async def set_databse(msg: Message, state: FSMContext):
             page.save(path.join(folder_path, f'out{count}.jpg'), 'JPEG')
 
         await sender.message(user_id, "doc_sended", kb.buttons(True, "gen", f"generate_{database_id}", "print", f"print_{database_id}"))
-
-
-def convert_to(folder, source, timeout=None):
-    args = ['libreoffice', '--headless', '--convert-to', 'pdf', '--outdir', folder, source]
-
-    process = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
-    filename = re.search('-> (.*?) using filter', process.stdout.decode())
-
-    return filename.group(1)
