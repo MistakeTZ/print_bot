@@ -44,10 +44,6 @@ async def time_check(msg: Message, state: FSMContext):
 @dp.message(UserState.edit, F.text)
 async def time_check(msg: Message, state: FSMContext):
     user_id = msg.from_user.id
-    try:
-        number = int(msg.text)
-    except:
-        return
 
     data = await state.get_data()
 
@@ -56,11 +52,44 @@ async def time_check(msg: Message, state: FSMContext):
     directory = path.join("temp", str(values[0]))
     files = next(walk(directory), (None, None, []))[2]
 
-    _, files, sizes = combine_images_to_pdf(directory, files, "photo.pdf",
-            grid_size=(int(math.sqrt(values[1])), int(math.sqrt(values[1]))),
-            grayscale=values[3], border=values[2])
+    if data["edit"] != "size":
+        try:
+            number = int(msg.text)
+        except:
+            return
+    if data["edit"] == "count":
+        count = number
+    else:
+        count = values[1]
 
-    DB.commit("update prints set {} = ?, width = ?, height = ? where id = ?".format(data["edit"]), [number, *sizes, data["id"]])
+    if data["edit"] != "size":
+        if data["edit"] == "fields":
+            fields = number
+        else:
+            fields = values[2]
+
+        returnable = combine_images_to_pdf(directory, files, "photo.pdf",
+                grid_size=(int(math.sqrt(count)), int(math.sqrt(count))),
+                grayscale=values[3], border=fields)
+        sizes = returnable["sizes"]
+
+        DB.commit("update prints set {} = ?, width = ?, height = ? where id = ?".format(data["edit"]), [number, *sizes, data["id"]])
+    else:
+        try:
+            splitter = "x" if "x" in msg.text else "х"
+            sizes = [float(num) * 10 for num in msg.text.split(splitter)]
+        except:
+            return
+
+        returnable = combine_images_to_pdf(directory, files, "photo.pdf",
+                grid_size=(int(math.sqrt(values[1])), int(math.sqrt(values[1]))),
+                grayscale=values[3], border=values[2], size=sizes)
+        sizes = returnable["sizes"]
+        fields = min(returnable["borders"])
+
+        DB.commit("update prints set fields = ?, width = ?, height = ? where id = ?".format(
+            data["edit"]), [fields, *sizes, data["id"]])
+    files = returnable["pathes"]
 
     if values[4] == 'short':
         duplex = "по короткому краю"
@@ -78,17 +107,10 @@ async def time_check(msg: Message, state: FSMContext):
 
     text = sender.text("paint_settings")
 
-    reply = kb.edit_buttons(data["id"], 0, len(files),  values[1], sizes, ["отключено", "включено"][values[3]], values[2], duplex, quality)
+    reply = kb.edit_buttons(data["id"], 0, len(files), count, sizes, ["отключено", "включено"][values[3]], fields, duplex, quality)
 
     file = FSInputFile(path=files[0], filename="photo.jpg")
     await bot.send_photo(user_id, file, caption=text, reply_markup=reply)
-
-
-# Установка телефона
-@dp.message(UserState.phone, F.contact)
-async def phone_check(msg: Message, state: FSMContext):
-    user_id = msg.from_user.id
-    phone = msg.contact.phone_number
 
 
 # Установка базы данных

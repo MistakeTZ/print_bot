@@ -2,7 +2,7 @@ from PIL import Image, ImageOps
 from fpdf import FPDF
 import os
 
-def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 297), grid_size=(1, 1), grayscale=False, border=5):
+def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 297), grid_size=(1, 1), grayscale=False, border=5, size=None):
     """
     Объединяет изображения в PDF.
     
@@ -11,6 +11,7 @@ def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 29
     :param page_size: Размер страницы в мм (по умолчанию A4).
     :param grid_size: Сетка для размещения изображений (количество строк и столбцов).
     :param grayscale: Если True, применяет фильтр оттенков серого.
+    :param size: Если None, не влияет, если tuple(float, float), устанавливает размер одного фото.
     """
     temp_file_dir = os.path.join(directory, "pages")
     temp_file_pathes = []
@@ -26,11 +27,22 @@ def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 29
     on_page = grid_size[0] * grid_size[1]
     mm_to_px = 11.81  # 1 мм в пикселях при 300 DPI
     page_width, page_height = (int(page_size[0] * mm_to_px), int(page_size[1] * mm_to_px))
-    space = border * mm_to_px
-    spaces_count = (grid_size[0] + 1, grid_size[1] + 1)
 
-    cell_width = int((page_width - space * spaces_count[1]) // grid_size[1])
-    cell_height = int((page_height - space * spaces_count[0]) // grid_size[0])
+    spaces_count = (grid_size[0] + 1, grid_size[1] + 1)
+    if size:
+        cell_width = size[0] * mm_to_px
+        cell_height = size[1] * mm_to_px
+        spaces = ((page_width - cell_width * grid_size[1]) / (grid_size[1] + 1),
+                  (page_height - cell_height * grid_size[0]) / (grid_size[0] + 1))
+        borders = [int(space / mm_to_px) for space in spaces]
+
+    else:
+        spaces = (border * mm_to_px, border * mm_to_px)
+        spaces_count = (grid_size[0] + 1, grid_size[1] + 1)
+
+        cell_width = int((page_width - spaces[1] * spaces_count[1]) // grid_size[1])
+        cell_height = int((page_height - spaces[0] * spaces_count[0]) // grid_size[0])
+        borders = [border] * 2
     
     pdf = FPDF(unit="mm", format=page_size)
     pdf.set_auto_page_break(auto=True, margin=0)
@@ -50,8 +62,8 @@ def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 29
                 img = img.rotate(90, expand=True)
 
             img = img.resize((width, height), Image.Resampling.LANCZOS)
-            x = int((idx % grid_size[1]) * (cell_width + space) + space) + offsets[0]
-            y = int((idx // grid_size[1]) * (cell_height + space) + space) + offsets[1]
+            x = int((idx % grid_size[0]) * (cell_width + spaces[0]) + spaces[0]) + offsets[0]
+            y = int((idx // grid_size[1]) * (cell_height + spaces[1]) + spaces[1]) + offsets[1]
             sheet.paste(img, (x, y))
 
         temp_file_path = os.path.join(temp_file_dir, str(i) + ".jpg")
@@ -66,7 +78,13 @@ def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 29
     pdf.output(output_pdf)
     print(f"PDF создан {output_pdf}")
 
-    return output_pdf, temp_file_pathes, (cell_width / mm_to_px, cell_height / mm_to_px)
+    return_values = {
+        # "output": output_pdf,
+        "pathes": temp_file_pathes,
+        "sizes": (cell_width / mm_to_px, cell_height / mm_to_px),
+        "borders": borders
+    }
+    return return_values
 
 
 def count_width_and_height(cell_width, cell_height, width, height):

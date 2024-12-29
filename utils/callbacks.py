@@ -43,10 +43,10 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
         return
 
     await sender.message(user_id, "creating_doc")
-    _, photo_pathes, _ = combine_images_to_pdf(directory, files, "photo.pdf")
+    data = combine_images_to_pdf(directory, files, "photo.pdf")
 
-    file = FSInputFile(path=photo_pathes[0], filename="photo.jpg")
-    reply = kb.edit_buttons(print_id, 0, len(photo_pathes), 1, [200, 287], "отключено", 5, "по длинному краю", "среднее")
+    file = FSInputFile(path=data["pathes"][0], filename="photo.jpg")
+    reply = kb.edit_buttons(print_id, 0, len(data["pathes"]), 1, [200, 287], "отключено", 5, "по длинному краю", "среднее")
     await bot.send_photo(user_id, file, caption=sender.text("paint_settings"), reply_markup=reply)
 
 
@@ -74,7 +74,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
         photo_changed = True
 
     else:
-        if to_edit == "count" or to_edit == "fields":
+        if to_edit in ["size", "count", "fields"]:
             await state.set_data({"id": print_id, "edit": to_edit})
             await state.set_state(UserState.edit)
             await sender.message(user_id, "edit_" + to_edit, kb.buttons(True, "back", f"edit_{print_id}_page_{page}"))
@@ -103,9 +103,10 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
             files = next(walk(photo_path), (None, None, []))[2]
             values[3] = not values[3]
             DB.commit("update prints set color = ? where id = ?", [values[3], print_id])
-            _, files, _ = combine_images_to_pdf(photo_path, files, "photo.pdf",
+            data = combine_images_to_pdf(photo_path, files, "photo.pdf",
                                                     grid_size=(int(math.sqrt(values[1])), int(math.sqrt(values[1]))),
-                                                    grayscale=values[3], border=values[2])
+                                                    grayscale=values[3], size=(values[6:8]))
+            files = data["pathes"]
             file = files[page]
             photo_changed = True
 
@@ -159,7 +160,7 @@ async def print_(clbck: CallbackQuery, state: FSMContext):
             return
     
         await sender.message(user_id, "creating_doc")
-        file_path, _, _ = combine_images_to_pdf(directory, files, "photo.pdf")
+        data = combine_images_to_pdf(directory, files, "photo.pdf")
 
     await sender.message(user_id, "creating_job")
     job_id = create_print_job(print_id, data[2], data[1]!='off', data[3])
