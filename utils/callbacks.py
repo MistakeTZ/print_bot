@@ -117,11 +117,11 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
     elif values[4] == 'long':
         duplex = "переплет по длинному краю"
 
-    if values[4] == 'low':
+    if values[5] == 'low':
         quality = "низкое"
-    elif values[4] == 'medium':
+    elif values[5] == 'medium':
         quality = "среднее"
-    elif values[4] == 'high':
+    elif values[5] == 'high':
         quality = "высокое"
 
     text = sender.text("paint_settings",
@@ -146,15 +146,15 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
 async def print_(clbck: CallbackQuery, state: FSMContext):
     user_id = clbck.from_user.id
     print_id = int(clbck.data.split("_")[-1])
-    media_group = DB.get("select media_group_id from prints where id = ?", [print_id], True)
+    data = DB.get("select media_group_id, 2side, quality from prints where id = ?", [print_id], True)
 
-    if not media_group:
+    if not data:
         await sender.message(user_id, "failed")
         return
 
-    file_path = path.join("temp", str(media_group[0]), "photo.pdf")
+    file_path = path.join("temp", str(data[0]), "photo.pdf")
     if not path.exists(file_path):
-        directory = path.join("temp", str(media_group[0]))
+        directory = path.join("temp", str(data[0]))
         files = next(walk(directory), (None, None, []))[2]
         if not files:
             await sender.message(user_id, "failed")
@@ -164,7 +164,7 @@ async def print_(clbck: CallbackQuery, state: FSMContext):
         file_path, _ = combine_images_to_pdf(directory, files, "photo.pdf")
 
     await sender.message(user_id, "creating_job")
-    job_id = create_print_job(print_id)
+    job_id = create_print_job(print_id, data[2], data[1]!='off')
     if not job_id:
         await sender.message(user_id, "failed")
         return

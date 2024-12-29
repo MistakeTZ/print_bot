@@ -11,7 +11,6 @@ from config import get_env, get_config
 import utils.kb as kb
 from states import UserState
 from database.model import DB
-from .printing import create_print_job, execute_print, upload_file
 
 
 # Команда старта бота
@@ -25,10 +24,6 @@ async def command_start_handler(msg: Message, state: FSMContext) -> None:
 
     await sender.message(user_id, "start")
     await state.set_state(UserState.default)
-
-    # job_id = create_print_job()
-    # upload_file(path.join("temp", "SampleDoc.pdf"))
-    # execute_print(job_id)
 
 
 # Команда получения БД
