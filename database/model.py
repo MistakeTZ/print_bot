@@ -49,6 +49,7 @@ class DB():
                             fields int default 5,
                             color bool default false,
                             two_side text default 'long',
+                            quality text default 'medium',
                             registered timestamp
                             )""")
 

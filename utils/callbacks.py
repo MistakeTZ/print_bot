@@ -47,7 +47,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
 
     file = FSInputFile(path=photo_pathes[0], filename="photo.jpg")
     await bot.send_photo(user_id, file,
-                         caption=sender.text("paint_settings", 1, "отключено", 5, "переплет по длинному краю"),
+                         caption=sender.text("paint_settings", 1, "отключено", 5, "переплет по длинному краю", "среднее"),
                          reply_markup=kb.edit_buttons(print_id, 0, len(photo_pathes)))
 
 
@@ -60,7 +60,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
     to_edit = data[2]
     page = int(data[3])
 
-    database = DB.get("select media_group_id, count, fields, color, two_side from prints where id = ?", [print_id], True)
+    database = DB.get("select media_group_id, count, fields, color, two_side, quality from prints where id = ?", [print_id], True)
 
     if not database:
         return
@@ -82,15 +82,24 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
             return
         elif to_edit == "2side":
             if values[4] == 'long':
-                text = "отключена"
                 values[4] = 'off'
             elif values[4] == 'short':
-                text = "переплет по длинному краю"
                 values[4] = 'long'
             else:
                 values[4] = 'short'
                 
             DB.commit("update prints set two_side = ? where id = ?", [values[4], print_id])
+
+        elif to_edit == "quality":
+            if values[5] == 'low':
+                values[5] = 'medium'
+            elif values[5] == 'medium':
+                values[5] = 'high'
+            else:
+                values[5] = 'low'
+                
+            DB.commit("update prints set two_side = ? where id = ?", [values[4], print_id])
+
         elif to_edit == "gray":
             files = next(walk(photo_path), (None, None, []))[2]
             values[3] = not values[3]
@@ -102,13 +111,21 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
             photo_changed = True
 
     if values[4] == 'short':
-        text = "переплет по короткому краю"
+        duplex = "переплет по короткому краю"
     elif values[4] == 'off':
-        text = "отключена"
+        duplex = "отключена"
     elif values[4] == 'long':
-        text = "переплет по длинному краю"
+        duplex = "переплет по длинному краю"
+
+    if values[4] == 'low':
+        quality = "низкое"
+    elif values[4] == 'medium':
+        quality = "среднее"
+    elif values[4] == 'high':
+        quality = "высокое"
+
     text = sender.text("paint_settings",
-        values[1], ["отключено", "включено"][values[3]], values[2], text)
+        values[1], ["отключено", "включено"][values[3]], values[2], duplex, quality)
     reply = kb.edit_buttons(print_id, page, len(files))
 
     if photo_changed:

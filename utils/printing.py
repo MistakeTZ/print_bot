@@ -20,6 +20,9 @@ access_token = ""
 def authentication():
     global host, body, subject_id, access_token
 
+    if not os.path.exists("temp"):
+        os.mkdir("temp")
+
     host = get_env("HOST")       # You will receive it when the license is issued.
     ACCEPT = 'application/json;charset=utf-8'
 
@@ -65,14 +68,16 @@ def authentication():
     access_token = json.loads(body).get('access_token')
 
 
-def create_print_job(job_id):
+def create_print_job(job_id, quality, duplex):
     global body
 
     job_uri = 'https://' + host + '/api/1/printing/printers/' + subject_id + '/jobs'
 
     data_param = {
         'job_name': f'SampleJob{job_id}',
-        'print_mode': 'document'
+        'print_mode': 'document',
+        'quality': quality,  # Указываем качество печати (например, 'low', 'medium', 'high')
+        'duplex': duplex      # Включаем двустороннюю печать (True или False)
     }
     data = json.dumps(data_param)
 

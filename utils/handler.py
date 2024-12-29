@@ -52,7 +52,7 @@ async def time_check(msg: Message, state: FSMContext):
     data = await state.get_data()
     DB.commit("update prints set {} = ? where id = ?".format(data["edit"]), [number, data["id"]])
 
-    database = DB.get("select media_group_id, count, fields, color, two_side from prints where id = ?", [data["id"]], True)
+    database = DB.get("select media_group_id, count, fields, color, two_side, quality from prints where id = ?", [data["id"]], True)
     values = list(database)
     directory = path.join("temp", str(values[0]))
     files = next(walk(directory), (None, None, []))[2]
@@ -62,13 +62,21 @@ async def time_check(msg: Message, state: FSMContext):
             grayscale=values[3], border=values[2])
 
     if values[4] == 'short':
-        text = "переплет по короткому краю"
+        duplex = "переплет по короткому краю"
     elif values[4] == 'off':
-        text = "отключена"
+        duplex = "отключена"
     elif values[4] == 'long':
-        text = "переплет по длинному краю"
+        duplex = "переплет по длинному краю"
+
+    if values[4] == 'low':
+        quality = "низкое"
+    elif values[4] == 'medium':
+        quality = "среднее"
+    elif values[4] == 'high':
+        quality = "высокое"
+
     text = sender.text("paint_settings",
-        values[1], ["отключено", "включено"][values[3]], values[2], text)
+        values[1], ["отключено", "включено"][values[3]], values[2], duplex, quality)
 
     reply = kb.edit_buttons(data["id"], 0, len(files))
 
