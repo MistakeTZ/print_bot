@@ -94,10 +94,10 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
                 values[5] = 'medium'
             elif values[5] == 'medium':
                 values[5] = 'high'
-            else:
+            elif values[5] == 'high':
                 values[5] = 'low'
                 
-            DB.commit("update prints set two_side = ? where id = ?", [values[4], print_id])
+            DB.commit("update prints set quality = ? where id = ?", [values[5], print_id])
 
         elif to_edit == "gray":
             files = next(walk(photo_path), (None, None, []))[2]
@@ -144,7 +144,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
 async def print_(clbck: CallbackQuery, state: FSMContext):
     user_id = clbck.from_user.id
     print_id = int(clbck.data.split("_")[-1])
-    data = DB.get("select media_group_id, 2side, quality from prints where id = ?", [print_id], True)
+    data = DB.get("select media_group_id, two_side, quality from prints where id = ?", [print_id], True)
 
     if not data:
         await sender.message(user_id, "failed")
