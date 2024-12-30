@@ -68,7 +68,12 @@ def edit_buttons(print_id, page, page_count, *args) -> InlineKeyboardMarkup:
         InlineKeyboardButton(text=">", callback_data=f"edit_{print_id}_page_{next_page}")
     ])
     for i, el in enumerate(["count", "size", "gray", "fields", "2side", "quality"]):
-        if el == "size":
+        if el == "count":
+            in_buttons.append([
+                InlineKeyboardButton(text=sender.text(el, *args[i]),
+                                     callback_data=f"edit_{print_id}_{el}_{page}")
+            ])
+        elif el == "size":
             sizes = [round(size, 0) / 10 for size in args[i]]
             in_buttons.append([
                 InlineKeyboardButton(text=sender.text(el, *sizes),

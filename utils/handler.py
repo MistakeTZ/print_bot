@@ -59,7 +59,8 @@ async def time_check(msg: Message, state: FSMContext):
             await sender.message(user_id, "edit_count_y")
             return
 
-    database = DB.get("select media_group_id, count, fields, color, two_side, quality from prints where id = ?", [data["id"]], True)
+    database = DB.get("select media_group_id, count_x, fields, color, \
+                      two_side, quality, count_y from prints where id = ?", [data["id"]], True)
     values = list(database)
     directory = path.join("temp", str(values[0]))
     files = next(walk(directory), (None, None, []))[2]
@@ -73,7 +74,8 @@ async def time_check(msg: Message, state: FSMContext):
         count_y = number
         count_x = data["x"]
     else:
-        count_x, count_y = values[1], values[1]
+        count_x, count_y = values[1], values[6]
+    grid = (count_x, count_y)
 
     if data["edit"] != "size":
         if data["edit"] == "fields":
@@ -82,11 +84,17 @@ async def time_check(msg: Message, state: FSMContext):
             fields = values[2]
 
         returnable = combine_images_to_pdf(directory, files, "photo.pdf",
-                grid_size=(count_x, count_y),
+                grid_size=grid,
                 grayscale=values[3], border=fields)
+
         sizes = returnable["sizes"]
 
-        DB.commit("update prints set {} = ?, width = ?, height = ? where id = ?".format(data["edit"]), [number, *sizes, data["id"]])
+        if data["edit"] == "fields":
+            DB.commit("update prints set fields = ?, width = ?, height = ? where id = ?",
+                      [number, *sizes, data["id"]])
+        else:
+            DB.commit("update prints set count_x = ?, count_y = ?, width = ?, height = ? where id = ?",
+                      [count_x, count_y, *sizes, data["id"]])
     else:
         try:
             splitter = "x" if "x" in msg.text else "х"
@@ -95,7 +103,7 @@ async def time_check(msg: Message, state: FSMContext):
             return
 
         returnable = combine_images_to_pdf(directory, files, "photo.pdf",
-                grid_size=(int(math.sqrt(values[1])), int(math.sqrt(values[1]))),
+                grid_size=grid,
                 grayscale=values[3], border=values[2], size=sizes)
         sizes = returnable["sizes"]
         fields = min(returnable["borders"])
@@ -120,7 +128,7 @@ async def time_check(msg: Message, state: FSMContext):
 
     text = sender.text("paint_settings")
 
-    reply = kb.edit_buttons(data["id"], 0, len(files), count_x, sizes, ["отключено", "включено"][values[3]], fields, duplex, quality)
+    reply = kb.edit_buttons(data["id"], 0, len(files), grid, sizes, ["отключено", "включено"][values[3]], fields, duplex, quality)
 
     file = FSInputFile(path=files[0], filename="photo.jpg")
     await bot.send_photo(user_id, file, caption=text, reply_markup=reply)

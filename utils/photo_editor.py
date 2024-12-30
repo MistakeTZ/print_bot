@@ -13,7 +13,6 @@ def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 29
     :param grayscale: Если True, применяет фильтр оттенков серого.
     :param size: Если None, не влияет, если tuple(float, float), устанавливает размер одного фото.
     """
-    print(grid_size)
     temp_file_dir = os.path.join(directory, "pages")
     temp_file_pathes = []
     if not os.path.exists(temp_file_dir):
@@ -33,8 +32,8 @@ def combine_images_to_pdf(directory, image_paths, output_pdf, page_size=(210, 29
     if size:
         cell_width = size[0] * mm_to_px
         cell_height = size[1] * mm_to_px
-        spaces = ((page_width - cell_width * grid_size[1]) / (grid_size[1] + 1),
-                  (page_height - cell_height * grid_size[0]) / (grid_size[0] + 1))
+        spaces = ((page_width - cell_width * grid_size[0]) / (grid_size[0] + 1),
+                  (page_height - cell_height * grid_size[1]) / (grid_size[1] + 1))
         borders = [int(space / mm_to_px) for space in spaces]
 
     else:

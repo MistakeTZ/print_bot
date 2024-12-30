@@ -46,7 +46,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
     data = combine_images_to_pdf(directory, files, "photo.pdf")
 
     file = FSInputFile(path=data["pathes"][0], filename="photo.jpg")
-    reply = kb.edit_buttons(print_id, 0, len(data["pathes"]), 1, [200, 287], "отключено", 5, "по длинному краю", "среднее")
+    reply = kb.edit_buttons(print_id, 0, len(data["pathes"]), (1, 1), [200, 287], "отключено", 5, "по длинному краю", "среднее")
     await bot.send_photo(user_id, file, caption=sender.text("paint_settings"), reply_markup=reply)
 
 
@@ -59,11 +59,13 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
     to_edit = data[2]
     page = int(data[3])
 
-    database = DB.get("select media_group_id, count, fields, color, two_side, quality, width, height from prints where id = ?", [print_id], True)
+    database = DB.get("select media_group_id, count_x, fields, color, two_side, \
+                      quality, width, height, count_y from prints where id = ?", [print_id], True)
 
     if not database:
         return
     values = list(database)
+    grid = (values[1], values[8])
 
     photo_path = path.join("temp", str(values[0]))
     files = next(walk(path.join(photo_path, "pages")), (None, None, []))[2]
@@ -104,7 +106,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
             values[3] = not values[3]
             DB.commit("update prints set color = ? where id = ?", [values[3], print_id])
             data = combine_images_to_pdf(photo_path, files, "photo.pdf",
-                                                    grid_size=(int(math.sqrt(values[1])), int(math.sqrt(values[1]))),
+                                                    grid_size=grid,
                                                     grayscale=values[3], size=(values[6:8]))
             files = data["pathes"]
             file = files[page]
@@ -125,7 +127,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
         quality = "высокое"
 
     text = sender.text("paint_settings")
-    reply = kb.edit_buttons(print_id, page, len(files), values[1], values[6:8], ["отключено", "включено"][values[3]], values[2], duplex, quality)
+    reply = kb.edit_buttons(print_id, page, len(files), grid, values[6:8], ["отключено", "включено"][values[3]], values[2], duplex, quality)
 
     if photo_changed:
         file = FSInputFile(path=file, filename="photo.jpg")
