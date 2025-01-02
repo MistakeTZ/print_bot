@@ -165,7 +165,7 @@ async def print_(clbck: CallbackQuery, state: FSMContext):
         data = combine_images_to_pdf(directory, files, "photo.pdf")
 
     await sender.message(user_id, "creating_job")
-    job_id = create_print_job(print_id, data[2], data[1]!='off', data[3])
+    job_id = create_print_job(print_id, data[2], data[1], data[3])
     if not job_id:
         await sender.message(user_id, "failed")
         return

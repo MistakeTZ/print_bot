@@ -90,6 +90,7 @@ def create_print_job(job_id, quality, duplex, color):
         }
     }
     data = json.dumps(data_param)
+    logging.info(data)
 
     headers = {
         'Authorization': 'Bearer ' + access_token,
