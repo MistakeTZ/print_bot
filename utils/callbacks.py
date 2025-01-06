@@ -82,6 +82,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
             await sender.message(user_id, "edit_" + to_edit, kb.buttons(True, "back", f"edit_{print_id}_page_{page}"))
             return
         elif to_edit == "2side":
+            await clbck.answer(sender.text("2side_not_work"))
             if values[4] == 'long':
                 values[4] = 'none'
             elif values[4] == 'short':
@@ -92,6 +93,7 @@ async def start_handler(clbck: CallbackQuery, state: FSMContext) -> None:
             DB.commit("update prints set two_side = ? where id = ?", [values[4], print_id])
 
         elif to_edit == "quality":
+            await clbck.answer(sender.text("quality_not_work"))
             if values[5] == 'draft':
                 values[5] = 'medium'
             elif values[5] == 'medium':
@@ -162,7 +164,7 @@ async def print_(clbck: CallbackQuery, state: FSMContext):
             return
     
         await sender.message(user_id, "creating_doc")
-        data = combine_images_to_pdf(directory, files, "photo.pdf")
+        combine_images_to_pdf(directory, files, "photo.pdf")
 
     await sender.message(user_id, "creating_job")
     job_id = create_print_job(print_id, data[2], data[1], data[3])

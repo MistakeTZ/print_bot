@@ -76,19 +76,20 @@ def create_print_job(job_id, quality, duplex, color):
     data_param = {
         'job_name': f'SampleJob{job_id}',
         'print_mode': 'document',
-        'print_setting': {
-            'media_size': "ms_a4",
-            'media_type': "mt_plainpaper",
-            'borderless': False,
-            'print_quality': quality,
-            'source': "auto",
-            'color_mode': ["color", "mono"][color],
-            'two_sided': duplex,
-            'reverse_order': False,
-            'copies': 1,
-            'collate': True
-        }
+        # 'print_setting': {
+        #     'media_size': "ms_a4",
+        #     'media_type': "mt_plainpaper",
+        #     'print_quality': quality,
+        #     'source': "auto",
+        #     'color_mode': ["color", "mono"][color],
+        #     # 'borderless': False,
+        #     # 'two_sided': duplex,
+        #     # 'reverse_order': False,
+        #     # 'copies': 1,
+        #     # 'collate': True
+        # }
     }
+
     data = json.dumps(data_param)
     logging.info(data)
 
