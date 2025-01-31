@@ -31,9 +31,7 @@ if __name__ == "__main__":
     from loader import dp, bot
 
     # Загрузка обработчика команд
-    from utils.printing import authentication, delete_photos
-
-    authentication()
+    from utils.printing import delete_photos
 
     try:
         loop.run_until_complete(multiple_tasks())

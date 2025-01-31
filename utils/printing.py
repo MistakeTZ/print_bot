@@ -15,10 +15,11 @@ host = ""
 body = None
 subject_id = ""
 access_token = ""
+last_auth = None
 
 
 def authentication():
-    global host, body, subject_id, access_token
+    global host, body, subject_id, access_token, last_auth
 
     if not os.path.exists("temp"):
         os.mkdir("temp")
@@ -67,9 +68,13 @@ def authentication():
     subject_id = json.loads(body).get('subject_id')
     access_token = json.loads(body).get('access_token')
 
+    last_auth = datetime.now()
+
 
 def create_print_job(job_id, quality, duplex, color):
     global body
+    if datetime.now() - last_auth > timedelta(hours=1):
+        authentication()
 
     job_uri = 'https://' + host + '/api/1/printing/printers/' + subject_id + '/jobs'
 
